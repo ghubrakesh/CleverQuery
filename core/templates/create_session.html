@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Create New Session
+{% endblock %}
+
+{% block content %}
+    <h1>Create New Session</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="title">Session Title:</label>
+        <input type="text" id="title" name="title" placeholder="Enter session title" required>
+        <button type="submit">Create Session</button>
+    </form>
+    <p><a href="{% url 'home' %}">Back to Home</a></p>
+{% endblock %}

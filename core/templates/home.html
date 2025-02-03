@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    CleverQuery - Home
+{% endblock %}
+
+{% block content %}
+    <h1>Welcome to CleverQuery</h1>
+    <p>Select an option below:</p>
+    <ul>
+        <li><a href="{% url 'create_session_with_option' option='exam-preparation' %}">Exam Preparation Guide</a></li>
+        <li><a href="{% url 'create_session_with_option' option='research-assistant' %}">Research Assistant</a></li>
+        <li><a href="{% url 'create_session_with_option' option='legal-analysis' %}">Legal Document Analysis</a></li>
+        <li><a href="{% url 'create_session_with_option' option='nutritional-label' %}">Nutritional Label Interpreter</a></li>
+    </ul>
+    <p><a href="{% url 'logout' %}">Logout</a></p>
+{% endblock %}

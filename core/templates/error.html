@@ -1,0 +1,18 @@
+<!-- core/templates/error.html -->
+
+{% extends 'base.html' %}
+
+{% block title %}
+    Error - CleverQuery
+{% endblock %}
+
+{% block content %}
+    <div class="error-container">
+        <h1>Oops! Something went wrong.</h1>
+        <p>{{ message }}</p>
+        <div class="actions">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="javascript:history.back();" class="button">Try Again</a>
+        </div>
+    </div>
+{% endblock %}

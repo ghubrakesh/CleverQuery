@@ -1,0 +1,68 @@
+<!-- core/templates/upload_document.html -->
+
+{% extends 'base.html' %}
+
+{% block title %}
+    Upload Document - CleverQuery
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1>Upload a Document for "{{ session.title }}"</h1>
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+            <div class="upload-area" id="dropzone">
+                <i class="fas fa-file-upload icon"></i>
+                <p class="text">Drag & Drop PDF File Here or Click to Select</p>
+                <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required style="display: none;">
+            </div>
+
+            <button type="submit" id="upload-button" style="display: none;">Upload</button>
+        </form>
+        <p><a href="{% url 'home' %}">Back to Home</a></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropzone = document.getElementById('dropzone');
+            const pdfFileInput = document.getElementById('pdf_file');
+            const uploadButton = document.getElementById('upload-button');
+
+            // Handle drag-and-drop events
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('highlight');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('highlight');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('highlight');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'application/pdf') {
+                    pdfFileInput.files = e.dataTransfer.files;
+                    uploadButton.style.display = 'block';
+                } else {
+                    alert('Please upload a valid PDF file.');
+                }
+            });
+
+            // Handle click to select file
+            dropzone.addEventListener('click', () => {
+                pdfFileInput.click();
+            });
+
+            // Show upload button when a file is selected
+            pdfFileInput.addEventListener('change', () => {
+                if (pdfFileInput.files.length > 0) {
+                    uploadButton.style.display = 'block';
+                } else {
+                    uploadButton.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}
