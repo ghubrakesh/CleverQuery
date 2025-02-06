@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CleverQuery{% endblock %}</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="mt-20">
     <!-- Menubar -->
     <header class="menubar">
         <div class="logo">CleverQuery</div>
@@ -25,7 +26,7 @@
     <!-- Main Layout -->
     <div class="main-layout">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar" style="display: none;">
+        <aside class="sidebar transition-transform duration-300 transform -translate-x-full z-1000" id="sidebar">
             <div class="sidebar-content">
                 <div class="sidebar-header">
                     <button id="new-chat" class="new-chat-button">+ New Chat</button>
@@ -56,13 +57,29 @@
         </aside>
 
         <!-- Content -->
-        <main class="content collapsed" tabindex="-1" role="main">
-            <div class="form-container">
-                {% block content %}
-                {% endblock %}
-            </div>
-        </main>
+        <div class="content transition-transform duration-300 transform" id="content">
+            {% block content %}
+            {% endblock %}
+        </div>
     </div>
+
+    <script>
+        // Toggle sidebar
+        document.getElementById('toggle-sidebar').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.remove('-translate-x-full');
+            content.classList.add('ml-64');
+            content.classList.remove('ml-0');
+            } else {
+            sidebar.classList.add('-translate-x-full');
+            content.classList.remove('ml-64');
+            content.classList.add('ml-0');
+            }
+        });
+        </script>
 
     <script>
         // Toggle dropdown menu
@@ -125,18 +142,6 @@
         }
 
         // Toggle sidebar
-        document.getElementById('toggle-sidebar').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const content = document.querySelector('.content');
-
-            if (sidebar.style.display === "none") {
-                sidebar.style.display = "block";
-                content.classList.remove('collapsed');
-            } else {
-                sidebar.style.display = "none";
-                content.classList.add('collapsed');
-            }
-        });
     </script>
 </body>
 </html>

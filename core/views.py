@@ -70,14 +70,15 @@ def create_session(request):
 def create_session_with_option(request, option):
     title_map = {
         "exam-preparation": "Exam Preparation Guide",
-        "research-assistant": "Research Assistant",
-        "legal-analysis": "Legal Document Analysis",
+        "technical-manual": "Technical Manual Interpreter",
+        "legal-document": "Legal Document Analysis",
         "nutritional-label": "Nutritional Label Interpreter",
+        "financial-report": "Financial Report Analysis",
+        "contract-review": "Contract Review Assistant",
     }
     title = title_map.get(option, "Custom Session")
     session = Session.objects.create(user=request.user, title=title)
     return redirect("upload_document", session_id=session.id)
-
 
 
 @login_required
@@ -107,10 +108,10 @@ def session_detail(request, session_id):
             "keywords": "Extract important terms and definitions.",
             "details": "Provide a detailed explanation of the topics covered.",
         },
-        "Research Assistant": {
-            "summarize": "Summarize the main findings of this research paper.",
-            "keywords": "Extract key terms and methodologies.",
-            "details": "Explain the research objectives and conclusions.",
+        "Technical Manual Interpreter": {
+            "summarize": "Summarize the main points of this technical manual.",
+            "keywords": "Extract key technical terms and instructions.",
+            "details": "Provide a detailed explanation of the procedures and guidelines.",
         },
         "Legal Document Analysis": {
             "summarize": "Summarize the key clauses and terms in this legal document.",
@@ -121,6 +122,16 @@ def session_detail(request, session_id):
             "summarize": "Summarize the nutritional information in this label.",
             "keywords": "Extract key ingredients and allergens.",
             "details": "Provide a detailed analysis of the nutritional content.",
+        },
+        "Financial Report Analysis": {
+            "summarize": "Summarize the key financial metrics in this report.",
+            "keywords": "Extract important financial terms and figures.",
+            "details": "Provide a detailed analysis of the financial performance.",
+        },
+        "Contract Review Assistant": {
+            "summarize": "Summarize the main points of this contract.",
+            "keywords": "Extract key terms and obligations.",
+            "details": "Analyze the implications of specific contract clauses.",
         },
     }
 
@@ -213,3 +224,30 @@ def update_session_title(request, session_id):
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)})
     return JsonResponse({"success": False, "error": "Invalid request method."})
+
+
+@login_required
+@require_http_methods(["POST"])
+def edit_message(request, query_id):
+    try:
+        query = Query.objects.get(id=query_id, session__user=request.user)
+        new_text = request.POST.get("text")
+        if new_text:
+            query.question = new_text
+            query.save()
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "error": "Invalid input."}, status=400)
+    except Query.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Query not found."}, status=404)
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_message(request, query_id):
+    try:
+        query = Query.objects.get(id=query_id, session__user=request.user)
+        query.delete()
+        return JsonResponse({"success": True})
+    except Query.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Query not found."}, status=404)

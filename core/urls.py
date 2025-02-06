@@ -21,4 +21,9 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
+
+
+    # extra??
+    path("edit-message/<int:query_id>/", views.edit_message, name="edit_message"),
+    path("delete-message/<int:query_id>/", views.delete_message, name="delete_message"),
 ]

@@ -7,62 +7,85 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        <h1>Upload a Document for "{{ session.title }}"</h1>
+<div class="bg-gray-100 h-screen flex items-center justify-center p-3">
+    <div class="w-full max-w-md p-9 bg-white rounded-lg shadow-lg">
+        <h1 class="text-center text-2xl sm:text-2xl font-semibold mb-4 text-gray-800">Upload a Document</h1>
         <form method="post" enctype="multipart/form-data" id="upload-form">
             {% csrf_token %}
-            <div class="upload-area" id="dropzone">
-                <i class="fas fa-file-upload icon"></i>
-                <p class="text">Drag & Drop PDF File Here or Click to Select</p>
-                <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required style="display: none;">
+            <div class="bg-gray-100 p-8 text-center rounded-lg border-dashed border-2 border-gray-300 hover:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105 hover:shadow-md" id="dropzone">
+                <label for="pdf_file" class="cursor-pointer flex flex-col items-center space-y-2">
+                    <svg class="w-16 h-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span class="text-gray-600">Drag and drop your PDF file here</span>
+                    <span class="text-gray-500 text-sm">(or click to select)</span>
+                </label>
+                <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required class="hidden">
             </div>
-
-            <button type="submit" id="upload-button" style="display: none;">Upload</button>
+            <div class="mt-6 text-center" id="fileList"></div>
+            <button type="submit" class="mt-6 w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75">
+                Upload
+            </button>
         </form>
-        <p><a href="{% url 'home' %}">Back to Home</a></p>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dropzone = document.getElementById('dropzone');
-            const pdfFileInput = document.getElementById('pdf_file');
-            const uploadButton = document.getElementById('upload-button');
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('pdf_file');
+    const fileList = document.getElementById('fileList');
 
-            // Handle drag-and-drop events
-            dropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropzone.classList.add('highlight');
-            });
+    // Handle drag-and-drop events
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-blue-500', 'border-2');
+    });
 
-            dropzone.addEventListener('dragleave', () => {
-                dropzone.classList.remove('highlight');
-            });
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-blue-500', 'border-2');
+    });
 
-            dropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropzone.classList.remove('highlight');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type === 'application/pdf') {
-                    pdfFileInput.files = e.dataTransfer.files;
-                    uploadButton.style.display = 'block';
-                } else {
-                    alert('Please upload a valid PDF file.');
-                }
-            });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-blue-500', 'border-2');
+        const files = e.dataTransfer.files;
 
-            // Handle click to select file
-            dropzone.addEventListener('click', () => {
-                pdfFileInput.click();
-            });
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            fileInput.files = files;
+            handleFiles(files);
+        } else {
+            alert('Please upload a valid PDF file.');
+        }
+    });
 
-            // Show upload button when a file is selected
-            pdfFileInput.addEventListener('change', () => {
-                if (pdfFileInput.files.length > 0) {
-                    uploadButton.style.display = 'block';
-                } else {
-                    uploadButton.style.display = 'none';
-                }
-            });
-        });
-    </script>
+    // Handle file input change event
+    fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            handleFiles(files);
+        } else {
+            alert('Please upload a valid PDF file.');
+        }
+    });
+
+    // Display selected file
+    function handleFiles(files) {
+        fileList.innerHTML = '';
+        for (const file of files) {
+            const listItem = document.createElement('div');
+            listItem.textContent = `${file.name} (${formatBytes(file.size)})`;
+            fileList.appendChild(listItem);
+        }
+    }
+
+    // Format file size
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+</script>
 {% endblock %}

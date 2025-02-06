@@ -3,22 +3,9 @@
 /* General Styles */
 body {
     font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 10vw;
-    background-color: #f4f4f9; /* Light gray background */
+    top: 40px;
+    overflow-x:hidden;
 }
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-h1, h2, h3 {
-    color: #333;
-}
-
-
 
 /* Menubar */
 .menubar {
@@ -66,19 +53,20 @@ h1, h2, h3 {
 }
 
 /* Main Layout */
-.main-layout {
+
+
+/* .main-layout {
     display: flex;
-    margin-top: 60px; /* Adjust for menubar height */
+    margin-top: 60px; 
     position: relative;
 }
 
-/* Content */
 .content {
     flex-grow: 1;
     padding: 20px;
-    transition: margin-left 0.3s ease-in-out; /* Smooth transition for shifting */
-    margin-left: 250px; /* Default margin when sidebar is visible */
-}
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 250px;
+} */
 
 .content.collapsed {
     margin-left: 0; /* Reset content position when sidebar is hidden */

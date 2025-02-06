@@ -33,3 +33,8 @@ class Query(models.Model):
 
     def __str__(self):
         return self.question
+
+    def save(self, *args, **kwargs):
+        if not self.answer:
+            raise ValueError("You must provide an answer")
+        super().save(*args, **kwargs)

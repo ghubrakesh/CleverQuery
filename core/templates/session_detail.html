@@ -7,76 +7,42 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{{ session.title }}</h1>
 
-    <div class="conversation">
+	<!-- Component Start -->
+    <div class="flex flex-col flex-grow h-[93vh] p-4 overflow-auto mb-20">
         {% for query in queries %}
-            <div class="message user">
-                <div class="bubble">{{ query.question }}</div>
+        {{query.id}}
+        {{query.answer | safe}}
+            <div class="flex w-full mt-2 space-x-3 max-w-xs ml-auto justify-end">
+                <div>
+                    <div class="bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg">
+                        <p class="text-sm">{{ query.question | safe }}</p>
+                    </div>
+                    <span class="text-xs text-gray-500 leading-none">2 min ago</span>
+                </div>
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300"></div>
             </div>
-            <div class="message bot">
-                <div class="bubble">{{ query.answer|safe }}</div>
+            
+            <div class="flex w-full mt-2 space-x-3 max-w-xs">
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300"></div>
+                <div>
+                    <div class="bg-gray-300 p-3 rounded-r-lg rounded-bl-lg">
+                        <p class="text-sm">{{ query.answer|safe }}</p>
+                    </div>
+                    <span class="text-xs text-gray-500 leading-none">2 min ago</span>
+                </div>
             </div>
         {% endfor %}
     </div>
 
-    <div class="fixed-footer">
-        <div class="input-area">
-            <form method="post">
-                {% csrf_token %}
-                <input type="text" name="question" placeholder="Ask a question" id="question-input">
-                <button type="submit">Submit</button>
-            </form>
-        </div>
+    <div class="fixed bg-white bottom-0 right-0 w-full p-4">
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex items-center w-full p-4">
+                <textarea name="question" class="flex-grow h-10 rounded px-3" placeholder="Type your message…" rows="1" style="max-height: 10em; overflow-y: auto;" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 160) + 'px'"></textarea>
+                <button class="ml-2 h-10 px-4 bg-blue-600 text-white rounded" type="submit">Submit</button>
+            </div>
+        </form>
     </div>
 
-
-    <script>
-        function editSessionTitle(element) {
-            const sessionId = element.dataset.sessionId;
-            const currentTitle = element.querySelector('a').innerText;
-
-            // Prompt user for a new title
-            const newTitle = prompt("Edit session title:", currentTitle);
-            if (newTitle && newTitle !== currentTitle) {
-                // Send an AJAX request to update the session title
-                fetch(`/update-session-title/${sessionId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ title: newTitle })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        element.querySelector('a').innerText = newTitle;
-                    } else {
-                        alert("Failed to update session title.");
-                    }
-                });
-            }
-        }
-
-        function deleteSession(element) {
-            const sessionId = element.dataset.sessionId;
-            if (confirm("Are you sure you want to delete this session?")) {
-                fetch(`/delete-session/${sessionId}/`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = "{% url 'home' %}";
-                    } else {
-                        alert("Failed to delete session.");
-                    }
-                });
-            }
-        }
-    </script>
 {% endblock %}
