@@ -50,8 +50,9 @@ def register_view(request):
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect("login")
+            user = form.save()
+            auth_login(request, user)
+            return redirect("/")
     else:
         form = UserCreationForm()
     return render(request, "register.html", {"form": form})
@@ -97,6 +98,9 @@ def delete_session(request, session_id):
 @login_required
 def session_detail(request, session_id):
     session = Session.objects.get(id=session_id)
+    if not session.document_set.exists():
+        return render(request, "error.html", {"message": "No document found."})
+
     queries = Query.objects.filter(session=session)
     identity_keywords = ["who are you", "what are you", "your name", "your identity"]
     model_keywords = ["which model are you", "what model are you", "powered by", "based on"]

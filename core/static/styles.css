@@ -1,14 +1,9 @@
 /* core/static/styles.css */
 
 /* General Styles */
-body {
-    font-family: Arial, sans-serif;
-    top: 40px;
-    overflow-x:hidden;
-}
 
 /* Menubar */
-.menubar {
+/* .menubar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -20,7 +15,7 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-}
+} */
 
 .menubar .logo {
     font-size: 20px;
@@ -368,4 +363,42 @@ body {
 .user-info span {
     font-size: 16px;
     color: #333; /* Dark text color */
+}
+
+
+
+/*  backhodi */
+.container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+h1 {
+  font-size: 120px;
+  text-transform: uppercase;
+  font-family: 'Gambetta', serif;
+  letter-spacing: -3px;
+  transition: 700ms ease;
+  font-variation-settings: "wght" 311;
+  margin-bottom: 0.8rem;
+  color: Blue;
+  outline: none;
+  text-align: center;
+}
+
+h1:hover {
+  font-variation-settings: "wght" 582; 
+  letter-spacing: 1px;
+}
+
+p {
+  font-size: 1.2em;
+  line-height: 150%;
+  text-align: left;
+  color: rgb(0, 0, 0);
+  letter-spacing: .5px;
 }

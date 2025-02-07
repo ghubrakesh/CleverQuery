@@ -7,80 +7,64 @@
     <link rel="stylesheet" href="/static/styles.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="mt-20">
-    <!-- Menubar -->
-    <header class="menubar">
-        <div class="logo">CleverQuery</div>
-        <nav>
-            {% if user.is_authenticated %}
-                <a href="{% url 'home' %}">Home</a>
-                <a href="{% url 'logout' %}">Logout</a>
-            {% else %}
-                <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'register' %}">Register</a>
-            {% endif %}
-            <button id="toggle-sidebar" class="toggle-button">☰</button>
-        </nav>
-    </header>
-
-    <!-- Main Layout -->
-    <div class="main-layout">
-        <!-- Sidebar -->
-        <aside class="sidebar transition-transform duration-300 transform -translate-x-full z-1000" id="sidebar">
-            <div class="sidebar-content">
-                <div class="sidebar-header">
-                    <button id="new-chat" class="new-chat-button">+ New Chat</button>
-                </div>
-                <div class="search-bar">
-                    <input type="text" placeholder="Search...">
-                </div>
-                <div class="chat-list">
-                    <h3>All Chats</h3>
-                    <ul id="session-list">
-                        {% for session in sessions %}
-                            <li data-session-id="{{ session.id }}">
-                                <a href="{% url 'session_detail' session.id %}">{{ session.title }}</a>
-                                <span class="menu-icon" onclick="toggleMenu(this)">⋮</span>
-                                <div class="dropdown-menu">
-                                    <button onclick="editSessionTitle('{{ session.id }}', '{{ session.title }}')">Edit Title</button>
-                                    <button onclick="deleteSession('{{ session.id }}')">Delete Session</button>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                <div class="user-info">
-                    <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}/static/user.png{% endif %}" alt="User Avatar" class="avatar">
-                    <span>{{ user.username }}</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Content -->
-        <div class="content transition-transform duration-300 transform" id="content">
-            {% block content %}
-            {% endblock %}
+<body>
+{% if user.is_authenticated %}
+  <div class="min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased bg-gray-50 text-gray-800">
+    <div class="fixed flex flex-col top-0 left-0 w-64 bg-white h-full border-r">
+        <div class="flex items-center justify-center h-14 border-b">
+        <a href="/"><img class="p-12" src="/static/logo.png" alt="CleverQuery"/></a>
         </div>
+        <div class="overflow-y-auto overflow-x-hidden flex-grow">
+        <ul class="flex flex-col py-4 space-y-1">
+            <li class="px-5">
+                <div class="flex flex-row items-center h-8">
+                    <div class="text-sm font-light tracking-wide text-gray-500">Actions</div>
+                </div>
+                </li>
+                <li>
+                <a href="/" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                    <span class="inline-flex justify-center items-center ml-4">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    </span>
+                    <span class="ml-2 text-sm tracking-wide truncate">New Chat</span>
+                </a>
+                </li>    
+            <li class="px-5">
+            <div class="flex flex-row items-center h-8">
+                <div class="text-sm font-light tracking-wide text-gray-500">History</div>
+            </div>
+            {% for session in sessions reversed %}
+            </li>
+            <li>
+            <a href="/session/{{ session.id }}" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                {% comment %} <span class="inline-flex justify-center items-center ml-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                </span> {% endcomment %}
+                <span class="ml-2 text-sm tracking-wide truncate">{{ session.title }}</span>
+                <span class="px-2 py-0.5 ml-auto text-xs font-medium tracking-wide text-indigo-500 bg-indigo-50 rounded-full">New</span>
+            </a>
+            </li>
+            {% endfor %}
+            <div class="fixed bottom-0 left-0 w-64 bg-white border-r">
+                <a href="/logout" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                    <span class="inline-flex justify-center items-center ml-4">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </span>
+                    <span class="ml-2 text-sm tracking-wide truncate">Logout</span>
+                    </a>
+            </div>
+        </ul>
+    </div>
+</div>
+{% endif %}    
+    <div class="content flex flex-col right-0 ml-64 bg-white h-full" id="content">
+
+        {% block content %}
+        {% endblock %}
+    </div> 
     </div>
 
-    <script>
-        // Toggle sidebar
-        document.getElementById('toggle-sidebar').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const content = document.getElementById('content');
-
-            if (sidebar.classList.contains('-translate-x-full')) {
-            sidebar.classList.remove('-translate-x-full');
-            content.classList.add('ml-64');
-            content.classList.remove('ml-0');
-            } else {
-            sidebar.classList.add('-translate-x-full');
-            content.classList.remove('ml-64');
-            content.classList.add('ml-0');
-            }
-        });
-        </script>
-
+    </div>
     <script>
         // Toggle dropdown menu
         function toggleMenu(element) {

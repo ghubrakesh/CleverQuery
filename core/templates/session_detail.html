@@ -9,10 +9,8 @@
 {% block content %}
 
 	<!-- Component Start -->
-    <div class="flex flex-col flex-grow h-[93vh] p-4 overflow-auto mb-20">
+    <div class="flex flex-col flex-grow p-4 overflow-auto">
         {% for query in queries %}
-        {{query.id}}
-        {{query.answer | safe}}
             <div class="flex w-full mt-2 space-x-3 max-w-xs ml-auto justify-end">
                 <div>
                     <div class="bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg">
@@ -20,14 +18,14 @@
                     </div>
                     <span class="text-xs text-gray-500 leading-none">2 min ago</span>
                 </div>
-                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300"></div>
+                <img class="size-12" src="/static/user.png">
             </div>
             
-            <div class="flex w-full mt-2 space-x-3 max-w-xs">
-                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300"></div>
+            <div class="flex w-full mt-2 space-x-3 max-w-lg">
+                <img class="size-12" src="/static/bot.png">
                 <div>
                     <div class="bg-gray-300 p-3 rounded-r-lg rounded-bl-lg">
-                        <p class="text-sm">{{ query.answer|safe }}</p>
+                        <p class="text-sm text-black text-left">{{ query.answer|safe }}</p>
                     </div>
                     <span class="text-xs text-gray-500 leading-none">2 min ago</span>
                 </div>
@@ -35,14 +33,30 @@
         {% endfor %}
     </div>
 
-    <div class="fixed bg-white bottom-0 right-0 w-full p-4">
-        <form method="post">
+    {% comment %} <div class="fixed bg-white bottom-0 right-0 p-4"> {% endcomment %}
+        {% comment %} <div class="fixed bottom-0 w-full bg-white p-4">
+            <form method="post" class="w-full">
             {% csrf_token %}
-            <div class="flex items-center w-full p-4">
-                <textarea name="question" class="flex-grow h-10 rounded px-3" placeholder="Type your message…" rows="1" style="max-height: 10em; overflow-y: auto;" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 160) + 'px'"></textarea>
+            <div class="flex items-center w-full p-1 resize rounded-md">
+                <textarea name="question" class="flex-grow h-10 rounded mx-30" placeholder="Type your message…"></textarea>
                 <button class="ml-2 h-10 px-4 bg-blue-600 text-white rounded" type="submit">Submit</button>
             </div>
-        </form>
-    </div>
+            </form>
+        </div> {% endcomment %}
+
+        <div class="h-24"></div> <!-- Spacer to prevent content from being hidden behind the fixed div -->
+        <div class="fixed right-0 bottom-0 p-4">
+            <form method="post" class="flex items-center w-full space-x-2">
+                {% csrf_token %}
+              <input name="question"
+            class="flex-grow h-10 w-96 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
+            placeholder="Type your message" required>
+              <button
+            class="h-10 px-4 py-2 rounded-md text-sm font-medium text-[#f9fafb] disabled:pointer-events-none disabled:opacity-50 bg-black hover:bg-[#111827E6]" type="submit">
+            Send</button>
+            </form>
+        </div>
+      
+    {% comment %} </div> {% endcomment %}
 
 {% endblock %}
