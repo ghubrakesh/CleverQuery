@@ -8,15 +8,83 @@
 
 {% block content %}
 
-	<!-- Component Start -->
-    <div class="flex flex-col flex-grow p-4 overflow-auto">
+<div id="toast-simple" class="fixed top-0 mt-2 flex w-full max-w-xs p-3 space-x-2 rtl:space-x-reverse text-blue-700 bg-blue-300 divide-x rtl:divide-x-reverse divide-gray-200 rounded-xl shadow-sm" style="left: calc(50% - 32px);">
+    <div class="w-full text-center text-sm font-normal">
+        <input type="text" id="session-title-input" class="bg-blue-300 border-0 text-blue-700 text-center w-full focus:outline-none" value="{{ session.title }}" onkeydown="if(event.key === 'Enter') { updateSessionTitle(); }">
+    </div>
+    <div class="pl-4">
+        <img onclick="deleteSession()" src="/static/delete.png" class="w-7 h-5 text-blue-600 dark:text-blue-500 cursor-pointer" alt="Delete">
+    </div>
+</div>
+
+<script>
+    function updateSessionTitle() {
+        const newTitle = document.getElementById('session-title-input').value;
+        fetch("{% url 'update_session_title' session.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ title: newTitle })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to update the session title.');
+            }
+        });
+    }
+    function deleteSession() {
+        {
+            if (confirm('Do you want to delete this session?')) {
+                fetch("{% url 'delete_session' session.id %}", {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.success) {
+                        window.location.href = "{% url 'home' %}";
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            }
+        }
+        fetch("{% url 'delete_session' session.id %}", {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success) {
+                window.location.href = "{% url 'home' %}";
+            } else {
+                alert(data.error);
+            }
+        });
+    }
+</script>
+
+    <div class="flex flex-col flex-grow p-20 overflow-auto">
         {% for query in queries %}
-            <div class="flex w-full mt-2 space-x-3 max-w-xs ml-auto justify-end">
+            <div class="flex w-full mt-2 space-x-3 max-w-md ml-auto justify-end">
                 <div>
-                    <div class="bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg">
-                        <p class="text-sm text-white">{{ query.question | safe }}</p>
+                    <div class="markdown-content bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg markdown-content">
+                        <p class="text-white text-left text-sm">{{ query.question | safe }}</p>
                     </div>
-                    <span class="text-xs text-gray-500 leading-none">2 min ago</span>
+                    <span class="text-xs text-gray-500 leading-none">{{query.asked_at}}</span>
                 </div>
                 <img class="size-12" src="/static/user.png">
             </div>
@@ -25,9 +93,9 @@
                 <img class="size-12" src="/static/bot.png">
                 <div>
                     <div class="bg-gray-300 p-3 rounded-r-lg rounded-bl-lg">
-                        <p class="text-sm text-black text-left">{{ query.answer|safe }}</p>
+                        <p class="text-black text-left text-sm">{{ query.answer|safe }}</p>
                     </div>
-                    <span class="text-xs text-gray-500 leading-none">2 min ago</span>
+                    <span>{{query.asked_at}}</span>
                 </div>
             </div>
         {% endfor %}

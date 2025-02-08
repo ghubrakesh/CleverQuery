@@ -1,84 +1,17 @@
 /* core/static/styles.css */
 
-/* General Styles */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 10vw;
-    background-color: #f4f4f9; /* Light gray background */
-}
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-h1, h2, h3 {
-    color: #333;
-}
-
-
-
-/* Menubar */
-.menubar {
+/* .main-layout {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-}
-
-.menubar .logo {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.menubar nav {
-    display: flex;
-    align-items: center;
-}
-
-.menubar nav a {
-    color: white;
-    text-decoration: none;
-    margin-left: 15px;
-}
-
-.menubar nav a:hover {
-    text-decoration: underline;
-}
-
-.menubar .toggle-button {
-    background-color: transparent;
-    color: white;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 24px;
-    margin-left: 15px;
-}
-
-/* Main Layout */
-.main-layout {
-    display: flex;
-    margin-top: 60px; /* Adjust for menubar height */
+    margin-top: 60px; 
     position: relative;
 }
 
-/* Content */
 .content {
     flex-grow: 1;
     padding: 20px;
-    transition: margin-left 0.3s ease-in-out; /* Smooth transition for shifting */
-    margin-left: 250px; /* Default margin when sidebar is visible */
-}
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 250px;
+} */
 
 .content.collapsed {
     margin-left: 0; /* Reset content position when sidebar is hidden */
@@ -142,11 +75,68 @@ h1, h2, h3 {
     right: -10px;
 }
 
-.message.bot .bubble::before {
-    border-width: 6px 10px 6px 0;
-    border-color: transparent #007bff transparent transparent;
-    left: -10px;
+
+/* Table Styling */
+/* General table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Table header styling */
+  thead tr {
+    background-color: #262626; /* Bright blue for contrast */
+    color: white;
+    text-align: left;
+  }
+  
+  th {
+    padding: 12px 15px;
+    font-weight: bold;
+    font-size: small;
+  }
+  
+  /* Table body styling */
+  tbody tr {
+    border-bottom: 1px solid #000000;
+    /* background-color: #f0f8ff;  */
+    font-size: small;
+
+  }
+  
+  /* tbody tr:nth-of-type(even) {
+    background-color: #f0f8ff;
+  } */
+  
+  tbody tr:last-of-type {
+    border-bottom: 2px solid #000000; /* Highlight the last row with bright blue */
+  }
+  
+  td {
+    padding: 12px 15px;
+    /* vertical-align: top; */
+  }
+  
+  /* Hover effect for rows */
+  tbody tr:hover {
+    background-color: #dddddd; /* Light blue hover effect */
+  }
+  
+  /* Responsive design */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
+    }
+
+    th,
+    td {
+        padding: 8px 10px;
+    }
 }
+
 
 /* Fixed Footer */
 .fixed-footer {
@@ -190,24 +180,6 @@ h1, h2, h3 {
     background-color: #0056b3;
 }
 
-/* Sidebar */
-.sidebar {
-    position: fixed;
-    top: 60px; /* Adjust for menubar height */
-    left: 0;
-    width: 250px;
-    background-color: #f4f4f9; /* Light gray background */
-    color: #333; /* Dark text color */
-    padding: 20px;
-    height: calc(100vh - 60px); /* Full height minus menubar */
-    overflow-y: hidden; /* Prevent the entire sidebar from scrolling */
-    border-right: 1px solid #ddd; /* Add a subtle border */
-}
-
-.sidebar-content {
-    height: 100%;
-    overflow-y: auto; /* Allow the content inside the sidebar to scroll */
-}
 
 .new-chat-button {
     background-color: #007bff; /* Blue button */
@@ -217,6 +189,7 @@ h1, h2, h3 {
     cursor: pointer;
     border-radius: 4px;
     width: 100%;
+    margin-bottom: 15px;
 }
 
 .new-chat-button:hover {
@@ -224,7 +197,7 @@ h1, h2, h3 {
 }
 
 .search-bar input {
-    width: 100%;
+    width: 90%;
     padding: 10px;
     margin-bottom: 15px;
     border: 1px solid #ccc;
@@ -237,33 +210,38 @@ h1, h2, h3 {
     color: #333; /* Dark text color */
 }
 
-.chat-list li {
-    margin-bottom: 10px;
-    cursor: pointer;
+/*  backhodi */
+.container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.chat-list li:hover {
-    background-color: #e9ecef; /* Light gray background on hover */
-    height: auto;
-    border-radius: 4px;
+h1 {
+  font-size: 100px;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  color: Blue;
+  outline: none;
+  text-align: center;
 }
 
-.user-info {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    display: flex;
-    align-items: center;
+strong{
+    color: #000;
+    font-size: small;
+    font-weight: lighter;
 }
 
-.user-info .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
+p {
+    font-size: small;
+    color: #000;
+    text-align: left;
 }
 
-.user-info span {
-    font-size: 16px;
-    color: #333; /* Dark text color */
+li{
+    font-size: small;
+    text-align: left;
 }

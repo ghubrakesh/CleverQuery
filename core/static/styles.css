@@ -1,55 +1,5 @@
 /* core/static/styles.css */
 
-/* General Styles */
-
-/* Menubar */
-/* .menubar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-} */
-
-.menubar .logo {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.menubar nav {
-    display: flex;
-    align-items: center;
-}
-
-.menubar nav a {
-    color: white;
-    text-decoration: none;
-    margin-left: 15px;
-}
-
-.menubar nav a:hover {
-    text-decoration: underline;
-}
-
-.menubar .toggle-button {
-    background-color: transparent;
-    color: white;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 24px;
-    margin-left: 15px;
-}
-
-/* Main Layout */
-
-
 /* .main-layout {
     display: flex;
     margin-top: 60px; 
@@ -125,76 +75,69 @@
     right: -10px;
 }
 
-.message.bot .bubble::before {
-    border-width: 6px 10px 6px 0;
-    border-color: transparent #007bff transparent transparent;
-    left: -10px;
-}
 
 /* Table Styling */
-.message table {
+/* General table styling */
+table {
+    color: black;
     width: 100%;
     border-collapse: collapse;
-    margin: 15px 0;
-    font-size: 14px;
+    font-family: Arial, sans-serif;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Table header styling */
+  thead tr {
+    background-color: #262626; /* Bright blue for contrast */
+    color: white;
     text-align: left;
-}
-
-.message th,
-.message td {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-}
-
-.message th {
-    background-color: #f4f4f9;
-    color: #333;
+  }
+  
+  th {
+    padding: 12px 15px;
     font-weight: bold;
-}
+    font-size: small;
+  }
+  
+  /* Table body styling */
+  tbody tr {
+    border-bottom: 1px solid #000000;
+    /* background-color: #f0f8ff;  */
+    font-size: small;
 
-.message tr:nth-child(even) {
-    background-color: #256aff;
-}
-
-.message tr:hover {
-    background-color: #4800ff;
-}
-
-/* Responsive Table */
-@media (max-width: 600px) {
-    .message table,
-    .message thead,
-    .message tbody,
-    .message th,
-    .message td,
-    .message tr {
-        display: block;
+  }
+  
+  /* tbody tr:nth-of-type(even) {
+    background-color: #f0f8ff;
+  } */
+  
+  tbody tr:last-of-type {
+    border-bottom: 2px solid #000000; /* Highlight the last row with bright blue */
+  }
+  
+  td {
+    padding: 12px 15px;
+    /* vertical-align: top; */
+  }
+  
+  /* Hover effect for rows */
+  tbody tr:hover {
+    background-color: #dddddd; /* Light blue hover effect */
+  }
+  
+  /* Responsive design */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
     }
 
-    .message thead tr {
-        display: none;
-    }
-
-    .message tr {
-        margin-bottom: 15px;
-    }
-
-    .message td {
-        text-align: right;
-        padding-left: 50%;
-        position: relative;
-    }
-
-    .message td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 0;
-        width: 50%;
-        padding-left: 10px;
-        font-weight: bold;
-        text-align: left;
+    th,
+    td {
+        padding: 8px 10px;
     }
 }
+
 
 /* Fixed Footer */
 .fixed-footer {
@@ -239,26 +182,6 @@
 }
 
 
-/* Sidebar */
-.sidebar {
-    position: fixed;
-    top: 50px; /* Adjust for menubar height */
-    left: 0;
-    width: 250px;
-    background-color: #f4f4f9; /* Light gray background */
-    color: #333; /* Dark text color */
-    padding: 20px;
-    height: calc(100vh - 90px); /* Full height minus menubar */
-    overflow-y: hidden; /* Prevent the entire sidebar from scrolling */
-    border-right: 1px solid #ddd; /* Add a subtle border */
-}
-
-.sidebar-content {
-    height: 100%;
-    width: 100%;
-    overflow-y: auto; /* Allow the content inside the sidebar to scroll */
-}
-
 .new-chat-button {
     background-color: #007bff; /* Blue button */
     color: white;
@@ -287,85 +210,6 @@
     font-size: 18px;
     color: #333; /* Dark text color */
 }
-/* core/static/styles.css */
-
-/* Three-Dot Menu */
-.chat-list li {
-    position: relative;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.chat-list li:hover {
-    background-color: #e9ecef;
-    border-radius: 4px;
-}
-
-.chat-list li .menu-icon {
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-    font-size: 20px;
-    color: #666;
-    cursor: pointer;
-}
-
-.chat-list li .menu-icon:hover {
-    color: #333;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    z-index: 100;
-}
-
-.dropdown-menu.show {
-    display: block;
-}
-
-.dropdown-menu button {
-    width: 100%;
-    padding: 10px;
-    text-align: left;
-    border: none;
-    background-color: transparent;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.dropdown-menu button:hover {
-    background-color: #f4f4f9;
-}
-
-.user-info {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    display: flex;
-    align-items: center;
-}
-
-.user-info .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-
-.user-info span {
-    font-size: 16px;
-    color: #333; /* Dark text color */
-}
-
-
 
 /*  backhodi */
 .container {
@@ -378,27 +222,28 @@
 }
 
 h1 {
-  font-size: 120px;
+  font-size: 100px;
   text-transform: uppercase;
-  font-family: 'Gambetta', serif;
-  letter-spacing: -3px;
-  transition: 700ms ease;
-  font-variation-settings: "wght" 311;
   margin-bottom: 0.8rem;
   color: Blue;
   outline: none;
   text-align: center;
 }
 
-h1:hover {
-  font-variation-settings: "wght" 582; 
-  letter-spacing: 1px;
+strong{
+    color: #000;
+    font-size: small;
+    font-weight: lighter;
 }
 
 p {
-  font-size: 1.2em;
-  line-height: 150%;
-  text-align: left;
-  color: rgb(0, 0, 0);
-  letter-spacing: .5px;
+    font-size: small;
+    color: #000;
+    text-align: left;
+}
+
+li{
+    font-size: small;
+    text-align: left;
+    color: black;
 }

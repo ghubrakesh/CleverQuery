@@ -25,6 +25,7 @@ pydantic==2.10.6
 pydantic_core==2.27.2
 pyparsing==3.2.1
 PyPDF2==3.0.1
+python-dotenv==1.0.1
 requests==2.32.3
 rsa==4.9
 sqlparse==0.5.3
