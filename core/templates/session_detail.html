@@ -49,7 +49,6 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data);
                     if (data.success) {
                         window.location.href = "{% url 'home' %}";
                     } else {
@@ -58,26 +57,32 @@
                 });
             }
         }
-        fetch("{% url 'delete_session' session.id %}", {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            if (data.success) {
-                window.location.href = "{% url 'home' %}";
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        // Toggle scroll button behavior
+        const goToggleBtn = document.getElementById('go-toggle');
+        
+        goToggleBtn.addEventListener('click', function(){
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 5) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                alert(data.error);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }
         });
-    }
+        
+        // Update button text based on scroll position
+        window.addEventListener('scroll', function(){
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 5) {
+                goToggleBtn.innerText = "↑";
+            } else {
+                goToggleBtn.innerText = "↓";
+            }
+        });
+    });
 </script>
 
-    <div class="flex flex-col flex-grow p-20 overflow-auto">
+    <div class="flex flex-col flex-grow pt-20 px-20 overflow-auto">
         {% for query in queries %}
             <div class="flex w-full mt-2 space-x-3 max-w-md ml-auto justify-end">
                 <div>
@@ -112,19 +117,42 @@
             </form>
         </div> {% endcomment %}
 
-        <div class="h-24"></div> <!-- Spacer to prevent content from being hidden behind the fixed div -->
-        <div class="fixed right-0 bottom-0 p-4">
-            <form method="post" class="flex items-center w-full space-x-2">
-                {% csrf_token %}
-              <input name="question"
-            class="flex-grow h-10 w-96 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
-            placeholder="Type your message" required>
-              <button
-            class="h-10 px-4 py-2 rounded-md text-sm font-medium text-[#f9fafb] disabled:pointer-events-none disabled:opacity-50 bg-black hover:bg-[#111827E6]" type="submit">
-            Send</button>
-            </form>
+    {% comment %} Removed spacer between conversation and predefined questions {% endcomment %}
+    <!-- Removed the spacer div -->
+
+    <!-- Predefined questions bubbles container with bottom padding -->
+    <div class="mx-auto my-4 pb-20 p-4">
+        <div class="flex flex-wrap gap-2 justify-center">
+            {% for key, question in predefined_questions.items %}
+                <a href="?question={{ key }}" class="bg-blue-200 text-blue-800 rounded-full px-3 py-1 text-xs">
+                    {{ question }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+        <!-- Updated input form container centered between left-64 and right-0 -->
+        <div class="fixed bottom-0 flex justify-center p-4" style="left: 16rem; right: 0;">
+            <div class="w-full max-w-md">
+                <form method="post" class="flex items-center w-full space-x-2">
+                    {% csrf_token %}
+                    <input name="question"
+                        class="flex-grow h-10 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
+                        placeholder="Type your message" required>
+                    <button
+                        class="h-10 px-4 py-2 rounded-md text-sm font-medium text-[#f9fafb] bg-black hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50"
+                        type="submit">
+                        Send
+                    </button>
+                </form>
+            </div>
         </div>
       
     {% comment %} </div> {% endcomment %}
+
+    {% comment %} Added go-to-top/bottom toggle button with arrow icons, now circular {% endcomment %}
+    <button id="go-toggle" class="fixed bottom-4 right-4 bg-black text-white rounded-full w-8 h-8 p-1 shadow-lg hover:bg-blue-700">
+        ↓
+    </button>
 
 {% endblock %}

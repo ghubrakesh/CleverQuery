@@ -79,6 +79,7 @@
 /* Table Styling */
 /* General table styling */
 table {
+    color: black;
     width: 100%;
     border-collapse: collapse;
     font-family: Arial, sans-serif;
@@ -244,4 +245,5 @@ p {
 li{
     font-size: small;
     text-align: left;
+    color: black;
 }

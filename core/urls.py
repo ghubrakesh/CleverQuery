@@ -1,9 +1,12 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path
 
 from . import views
 
 urlpatterns = [
-    path("", views.home, name="home"),
+    path("", views.index, name="index"),
+    path("home/", views.home, name="home"),
     path("create-session/", views.create_session, name="create_session"),
     path(
         "create-session/<str:option>/",
@@ -21,9 +24,12 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
-
+    path("dashboard/", views.dashboard, name="dashboard"),
 
     # extra??
     path("edit-message/<int:query_id>/", views.edit_message, name="edit_message"),
     path("delete-message/<int:query_id>/", views.delete_message, name="delete_message"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

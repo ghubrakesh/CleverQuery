@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to CleverQuery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-white text-gray-800">
+    <!-- Hero Section -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+        <div class="container mx-auto px-4 text-center">
+            <!-- Added logo -->
+            <img src="/static/logo.png" alt="CleverQuery Logo" class="mx-auto h-12 mb-4">
+            <p class="text-lg sm:text-xl mb-8">Your intelligent assistant for document analysis and queries.</p>
+            {% if user.is_authenticated %}
+                <a href="/home" class="bg-white text-blue-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                    Home
+                </a>
+            {% else %}
+                <a href="/login" class="bg-white text-blue-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                    Get Started
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- How It Works -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-white text-2xl font-bold">1</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Upload a Document</h3>
+                    <p class="text-gray-600">Drag and drop your PDF file or click to upload.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-white text-2xl font-bold">2</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Ask Questions</h3>
+                    <p class="text-gray-600">Interact with the document by asking questions.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-white text-2xl font-bold">3</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Get Answers</h3>
+                    <p class="text-gray-600">Receive intelligent responses powered by AI.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Overview -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Key Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">AI-Powered Responses</h3>
+                    <p class="text-gray-600">Get accurate answers based on document content.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Predefined Questions</h3>
+                    <p class="text-gray-600">Use predefined queries like "Summarize" or "Extract Keywords."</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 013-3h6a3 3 0 013 3v2a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Session Management</h3>
+                    <p class="text-gray-600">Organize your queries into sessions for better tracking.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    {% if not user.is_authenticated %}
+    <section class="py-20 bg-blue-800 text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p class="text-lg mb-8">Sign up now and experience the power of CleverQuery.</p>
+            <a href="/register" class="bg-white text-blue-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                Sign Up
+            </a>
+        </div>
+    </section>
+    {% else %}
+    <section class="py-20 bg-blue-800 text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-4">Your Dashboard</h2>
+            <p class="text-lg mb-8">
+                Manage your sessions, review past queries, and explore new tools to maximize your productivity.
+            </p>
+            <a href="/dashboard" class="bg-white text-blue-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                View Dashboard
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="py-10 bg-black text-white">
+        <div class="container mx-auto px-4 text-center">
+            <div class="text-center mt-4">
+                <p class="mb-2 font-semibold">Developed by:</p>
+                <div class="flex justify-center space-x-4">
+                    <div class="relative group inline-block">
+                        <a href="https://linkedin.com/in/inrakesh" class="text-gray-400 hover:text-white">Rakesh</a>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none">
+                            @inrakesh
+                        </div>
+                    </div>
+                    <div class="relative group inline-block">
+                        <a href="https://linkedin.com/in/sachin-404" class="text-gray-400 hover:text-white ml-4">Sachin</a>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none">
+                            @sachin404
+                        </div>
+                    </div>
+                    <div class="relative group inline-block">
+                        <a href="https://linkedin.com/in/diku2906" class="text-gray-400 hover:text-white ml-4">Diksha</a>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none">
+                            @diku2906
+                        </div>
+                    </div>
+                    <div class="relative group inline-block">
+                        <a href="https://www.linkedin.com/in/sarvesh-bidwe-674b50295" class="text-gray-400 hover:text-white ml-4">Sarvesh</a>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none">
+                            @diku2906
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="pt-4" >&copy; 2025 CleverQuery. All rights reserved.</p>
+            <div class="mt-4">
+                <div class="relative inline-block mx-2 group">
+                    <a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a>
+                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-96 p-3 bg-white text-gray-800 text-left text-sm rounded shadow-lg z-10">
+                        <ul class="list-disc pl-5">
+                            <li>Your data is not used for targeted advertising.</li>
+                            <li>Your data is only shared with our language model processing (LLM) services as necessary.</li>
+                            <li>Your privacy and security are our top priorities.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -46,10 +46,25 @@ genai.configure(api_key=os.getenv("GENERATIVEAI_API_KEY"))
 model = genai.GenerativeModel("gemini-pro")
 
 
+def index(request):
+    return render(request, "index.html")
+
+
 @login_required
 def home(request):
     sessions = Session.objects.filter(user=request.user)
     return render(request, "home.html", {"sessions": sessions})
+
+
+@login_required
+def dashboard(request):
+    sessions = Session.objects.filter(user=request.user)
+    recent_queries = Query.objects.filter(session__in=sessions).order_by("-asked_at")[:10]
+    return render(
+        request,
+        "dashboard.html",
+        {"sessions": sessions, "recent_queries": recent_queries},
+    )
 
 
 def login_view(request):
@@ -78,7 +93,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             auth_login(request, user)
-            return redirect("/")
+            return redirect("home")
     else:
         form = UserCreationForm()
     return render(request, "register.html", {"form": form})
@@ -141,37 +156,49 @@ def session_detail(request, session_id):
             "summarize": "Summarize the key concepts in this study material.",
             "keywords": "Extract important terms and definitions.",
             "details": "Provide a detailed explanation of the topics covered.",
-            "fixed_prompt": "You are a smart exam preparation guide bound to clear the doubts of students and provide neat answers which can help them ace their exams.",
+            "practice": "Generate sample questions to test my understanding.",
+            "study_tips": "Suggest effective study techniques for this material.",
+            "explain_difficult_topics": "Break down the most challenging parts in simple terms.",
         },
         "Technical Manual Interpreter": {
             "summarize": "Summarize the main points of this technical manual.",
             "keywords": "Extract key technical terms and instructions.",
             "details": "Provide a detailed explanation of the procedures and guidelines.",
-            "fixed_prompt": "You are a technical manual interpreter providing clear and concise explanations of technical documents.",
+            "quick_summary": "Offer a brief summary of the manual’s content.",
+            "step_by_step": "Guide me through the process detailed in the instructions.",
+            "highlight_warnings": "Identify any critical warnings or cautions mentioned.",
         },
         "Legal Document Analysis": {
             "summarize": "Summarize the key clauses and terms in this legal document.",
             "keywords": "Extract important legal terms and conditions.",
             "details": "Analyze the implications of specific clauses.",
-            "fixed_prompt": "You are a legal document analyst providing detailed analysis and summaries of legal documents.",
+            "identify_risks": "Point out potential legal risks or loopholes.",
+            "compare_with_standard": "Compare this document with standard legal agreements.",
+            "explain_legal_jargon": "Define and explain any complex legal language.",
         },
         "Nutritional Label Interpreter": {
             "summarize": "Summarize the nutritional information in this label.",
             "keywords": "Extract key ingredients and allergens.",
             "details": "Provide a detailed analysis of the nutritional content.",
-            "fixed_prompt": "You are a nutritional label interpreter providing clear and detailed information about nutritional content.",
+            "compare_nutrition": "Compare the nutritional value with recommended daily values.",
+            "ingredient_health": "Explain the health benefits or risks of the listed ingredients.",
+            "dietary_recommendations": "Suggest dietary adjustments based on this label.",
         },
         "Financial Report Analysis": {
             "summarize": "Summarize the key financial metrics in this report.",
             "keywords": "Extract important financial terms and figures.",
             "details": "Provide a detailed analysis of the financial data.",
-            "fixed_prompt": "You are a financial report analyst providing detailed summaries and analysis of financial reports.",
+            "analyze_trends": "Identify recent trends and forecast future performance.",
+            "risk_evaluation": "Assess potential financial risks in the report.",
+            "investment_opportunities": "Highlight promising investment opportunities from the data.",
         },
         "Contract Review Assistant": {
             "summarize": "Summarize the main points of this contract.",
             "keywords": "Extract key terms and obligations.",
             "details": "Analyze the implications of specific contract clauses.",
-            "fixed_prompt": "You are a contract review assistant providing detailed summaries and analysis of various contract reports.",
+            "red_flags": "Identify any red flags or unusual clauses within the contract.",
+            "negotiation_tips": "Offer advice to negotiate problematic terms.",
+            "constraint_identification": "Point out any constraints or limitations imposed by the contract.",
         },
     }
 
