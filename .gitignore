@@ -10,7 +10,6 @@ db.sqlite3
 # Distribution / packaging
 *.sqlite3
 media/
-staticfiles/
 .Python
 build/
 develop-eggs/
