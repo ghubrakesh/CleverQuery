@@ -32,5 +32,13 @@ sqlparse==0.5.3
 tqdm==4.67.1
 typing_extensions==4.12.2
 uritemplate==4.1.1
-urllib3==2.3.0
+urllib3==1.26.15
 zipp==3.21.0
+
+# RAG dependencies
+faiss-cpu==1.10.0
+sentence-transformers==3.4.1
+nltk==3.9.1
+
+# For HTML processing in streaming views
+beautifulsoup4==4.13.3

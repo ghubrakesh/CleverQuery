@@ -25,8 +25,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
     path("dashboard/", views.dashboard, name="dashboard"),
-
-    # extra??
+    path("sessions/<int:session_id>/stream/", views.stream_response, name="stream_response"),
     path("edit-message/<int:query_id>/", views.edit_message, name="edit_message"),
     path("delete-message/<int:query_id>/", views.delete_message, name="delete_message"),
 ]

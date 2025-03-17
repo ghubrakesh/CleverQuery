@@ -1,5 +1,3 @@
-<!-- core/templates/session_detail.html -->
-
 {% extends 'base.html' %}
 
 {% block title %}
@@ -8,12 +6,12 @@
 
 {% block content %}
 
-<div id="toast-simple" class="fixed top-0 mt-2 flex w-full max-w-xs p-3 space-x-2 rtl:space-x-reverse text-blue-700 bg-blue-300 divide-x rtl:divide-x-reverse divide-gray-200 rounded-xl shadow-sm" style="left: calc(50% - 32px);">
+<div id="toast-simple" class="fixed top-0 mt-2 flex w-full max-w-xs p-3 space-x-2 rtl:space-x-reverse text-black bg-blue/50 backdrop-blur-md divide-x rtl:divide-x-reverse divide-gray-600 rounded-xl shadow-lg border border-white-800/30" style="left: calc(50% - 32px);">
     <div class="w-full text-center text-sm font-normal">
-        <input type="text" id="session-title-input" class="bg-blue-300 border-0 text-blue-700 text-center w-full focus:outline-none" value="{{ session.title }}" onkeydown="if(event.key === 'Enter') { updateSessionTitle(); }">
+        <input type="text" id="session-title-input" class="bg-transparent border-0 text-black-200 text-center w-full focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" value="{{ session.title }}" onkeydown="if(event.key === 'Enter') { updateSessionTitle(); }">
     </div>
     <div class="pl-4">
-        <img onclick="deleteSession()" src="/static/delete.png" class="w-7 h-5 text-blue-600 dark:text-blue-500 cursor-pointer" alt="Delete">
+        <img onclick="deleteSession()" src="/static/delete.png" class="w-7 h-5 text-blue-600 dark:text-blue-500 cursor-pointer hover:opacity-75 transition-opacity" alt="Delete">
     </div>
 </div>
 
@@ -37,30 +35,240 @@
             }
         });
     }
+    
     function deleteSession() {
-        {
-            if (confirm('Do you want to delete this session?')) {
-                fetch("{% url 'delete_session' session.id %}", {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = "{% url 'home' %}";
-                    } else {
-                        alert(data.error);
-                    }
-                });
-            }
+        if (confirm('Do you want to delete this session?')) {
+            fetch("{% url 'delete_session' session.id %}", {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = "{% url 'home' %}";
+                } else {
+                    alert(data.error);
+                }
+            });
         }
     }
 
+    function submitStreamQuestion(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const question = formData.get('question');
+        
+        if (!question.trim()) return;
+        
+        form.querySelector('input[name="question"]').value = '';
+        
+        processStreamQuestion(question);
+    }
+
+    function submitPredefinedQuestion(event, questionText) {
+        event.preventDefault();
+        
+        processStreamQuestion(questionText);
+    }
+
+    function processStreamQuestion(question) {
+        const messagesContainer = document.getElementById('messages-container');
+        const currentTime = new Date().toLocaleTimeString();
+        
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'flex w-full mt-2 space-x-3 max-w-md ml-auto justify-end';
+        userMessageDiv.innerHTML = `
+            <div>
+                <div class="markdown-content bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg markdown-content">
+                    <p class="text-white text-left text-sm">${question}</p>
+                </div>
+                <span class="text-xs text-gray-500 leading-none">${currentTime}</span>
+            </div>
+            <img class="size-12" src="/static/user.png">
+        `;
+        messagesContainer.appendChild(userMessageDiv);
+        
+        const botResponseDiv = document.createElement('div');
+        botResponseDiv.className = 'flex w-full mt-2 space-x-3 max-w-lg';
+        botResponseDiv.innerHTML = `
+            <img class="size-12" src="/static/bot.png">
+            <div>
+                <div class="bg-gray-300 p-3 rounded-r-lg rounded-bl-lg">
+                    <div id="streaming-response-raw" class="text-black text-left text-sm whitespace-pre-wrap">
+                        <div class="flex items-center space-x-1 px-2">
+                            <div class="bg-gray-600 h-1 w-1 rounded-full animate-bounce"></div>
+                            <div class="bg-gray-600 h-1 w-1 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                            <div class="bg-gray-600 h-1 w-1 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                        </div>
+                    </div>
+                    <div id="streaming-response-rendered" class="text-black text-left text-sm hidden">
+                    </div>
+                </div>
+                <span>${currentTime}</span>
+            </div>
+        `;
+        messagesContainer.appendChild(botResponseDiv);
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        
+        const rawResponseElement = botResponseDiv.querySelector('#streaming-response-raw');
+        const renderedResponseElement = botResponseDiv.querySelector('#streaming-response-rendered');
+        
+        let isFirstChunk = true;
+        let hasCompletionMarker = false;
+        let fullMarkdown = '';
+        let streamingComplete = false;
+        let retryCount = 0;
+        const MAX_RETRIES = 2;
+        
+        function startStreaming(startPosition = 0) {
+            const formData = new FormData();
+            formData.append('question', question);
+            if (startPosition > 0) {
+                formData.append('stream_position', startPosition);
+            }
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "stream_response" session.id %}');
+            xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+            xhr.seenBytes = 0;
+            
+            xhr.timeout = 90000;
+            
+            xhr.onprogress = function() {
+                try {
+                    const newData = xhr.responseText.substring(xhr.seenBytes);
+                    xhr.seenBytes = xhr.responseText.length;
+                    
+                    if (newData.includes('<!-- STREAM_COMPLETE -->')) {
+                        hasCompletionMarker = true;
+                        streamingComplete = true;
+                        finalizeResponse();
+                        return;
+                    }
+                    
+                    if (isFirstChunk && newData.trim().length > 0) {
+                        rawResponseElement.innerHTML = '';
+                        isFirstChunk = false;
+                    }
+                    
+                    if (newData) {
+                        fullMarkdown += newData;
+                        rawResponseElement.textContent += newData;
+                    }
+                    
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                } catch(e) {
+                    console.error("Error processing chunk:", e);
+                }
+            };
+            
+            xhr.onload = function() {
+                console.log(`Stream response received: ${xhr.responseText.length} bytes`);
+                
+                if (xhr.responseText.includes('<!-- STREAM_COMPLETE -->')) {
+                    streamingComplete = true;
+                    hasCompletionMarker = true;
+                    finalizeResponse();
+                } else if (xhr.status >= 200 && xhr.status < 300) {
+                    if (fullMarkdown.length > 0 && !streamingComplete) {
+                        console.log("Response ended without completion marker. Attempting to continue...");
+                        
+                        setTimeout(() => {
+                            if (retryCount < MAX_RETRIES) {
+                                retryCount++;
+                                startStreaming(fullMarkdown.length);
+                            } else {
+                                console.log("Max retries reached, finalizing with what we have");
+                                streamingComplete = true;
+                                finalizeResponse();
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    renderErrorMessage(`Server error: ${xhr.status}`);
+                }
+            };
+            
+            xhr.ontimeout = function() {
+                console.error("Request timed out");
+                if (fullMarkdown.length > 0 && !streamingComplete) {
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++;
+                        console.log(`Retry ${retryCount} after timeout. Continuing from position ${fullMarkdown.length}`);
+                        startStreaming(fullMarkdown.length);
+                    } else {
+                        streamingComplete = true;
+                        finalizeResponse();
+                    }
+                } else {
+                    renderErrorMessage("Request timed out");
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error("XHR error occurred");
+                if (retryCount < MAX_RETRIES && fullMarkdown.length > 0) {
+                    retryCount++;
+                    console.log(`Retry ${retryCount} after error. Continuing from position ${fullMarkdown.length}`);
+                    setTimeout(() => startStreaming(fullMarkdown.length), 1000);
+                } else {
+                    if (fullMarkdown.length > 0) {
+                        streamingComplete = true;
+                        finalizeResponse();
+                    } else {
+                        renderErrorMessage("Error: Could not load response");
+                    }
+                }
+            };
+            
+            xhr.send(formData);
+            
+            console.log(`${startPosition > 0 ? 'Continuing' : 'Starting'} stream request from position ${startPosition}`);
+        }
+        
+        function finalizeResponse() {
+            if (streamingComplete) {
+                console.log("Finalizing response with length:", fullMarkdown.length);
+                
+                const cleanMarkdown = fullMarkdown.replace('<!-- STREAM_COMPLETE -->', '');
+                
+                try {
+                    rawResponseElement.classList.add('hidden');
+                    renderedResponseElement.classList.remove('hidden');
+                    renderedResponseElement.innerHTML = marked.parse(cleanMarkdown);
+                    
+                    if (window.hljs) {
+                        document.querySelectorAll('pre code').forEach((block) => {
+                            hljs.highlightElement(block);
+                        });
+                    }
+                    
+                    renderedResponseElement.id = 'response-' + Date.now();
+                } catch(e) {
+                    console.error("Error rendering markdown:", e);
+                    rawResponseElement.classList.remove('hidden');
+                    renderedResponseElement.classList.add('hidden');
+                    rawResponseElement.textContent = cleanMarkdown;
+                }
+                
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+        }
+        
+        function renderErrorMessage(message) {
+            rawResponseElement.innerHTML = `<span class="text-red-500">${message}</span>`;
+        }
+        
+        startStreaming();
+    }
+
     document.addEventListener('DOMContentLoaded', function(){
-        // Toggle scroll button behavior
         const goToggleBtn = document.getElementById('go-toggle');
         
         goToggleBtn.addEventListener('click', function(){
@@ -71,7 +279,6 @@
             }
         });
         
-        // Update button text based on scroll position
         window.addEventListener('scroll', function(){
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 5) {
                 goToggleBtn.innerText = "↑";
@@ -82,14 +289,53 @@
     });
 </script>
 
-    <div class="flex flex-col flex-grow pt-20 px-20 overflow-auto">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: false
+    });
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+<style>
+    .predefined-question {
+        @apply cursor-pointer transition-colors;
+    }
+
+    .predefined-question:hover {
+        @apply bg-blue-200;
+    }
+
+    pre {
+        @apply bg-gray-100 rounded p-2 overflow-x-auto;
+    }
+    
+    code {
+        @apply font-mono text-sm;
+    }
+    
+    .whitespace-pre-wrap {
+        @apply whitespace-pre-wrap;
+    }
+    
+    @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); } 
+        40% { transform: scale(1); }
+    }
+</style>
+
+    <div id="messages-container" class="flex flex-col flex-grow pt-20 px-20 overflow-auto">
         {% for query in queries %}
             <div class="flex w-full mt-2 space-x-3 max-w-md ml-auto justify-end">
                 <div>
                     <div class="markdown-content bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg markdown-content">
                         <p class="text-white text-left text-sm">{{ query.question | safe }}</p>
                     </div>
-                    <span class="text-xs text-gray-500 leading-none">{{query.asked_at}}</span>
+                    <span class="flex justify-end m-2 text-xs text-gray-500 leading-none">{{query.asked_at}}</span>
                 </div>
                 <img class="size-12" src="/static/user.png">
             </div>
@@ -97,62 +343,42 @@
             <div class="flex w-full mt-2 space-x-3 max-w-lg">
                 <img class="size-12" src="/static/bot.png">
                 <div>
-                    <div class="bg-gray-300 p-3 rounded-r-lg rounded-bl-lg">
+                    <div class="bg-gray-300 p-3 mb-8 rounded-r-lg rounded-bl-lg">
                         <p class="text-black text-left text-sm">{{ query.answer|safe }}</p>
                     </div>
-                    <span>{{query.asked_at}}</span>
                 </div>
             </div>
         {% endfor %}
     </div>
 
-    {% comment %} <div class="fixed bg-white bottom-0 right-0 p-4"> {% endcomment %}
-        {% comment %} <div class="fixed bottom-0 w-full bg-white p-4">
-            <form method="post" class="w-full">
-            {% csrf_token %}
-            <div class="flex items-center w-full p-1 resize rounded-md">
-                <textarea name="question" class="flex-grow h-10 rounded mx-30" placeholder="Type your message…"></textarea>
-                <button class="ml-2 h-10 px-4 bg-blue-600 text-white rounded" type="submit">Submit</button>
-            </div>
-            </form>
-        </div> {% endcomment %}
-
-    {% comment %} Removed spacer between conversation and predefined questions {% endcomment %}
-    <!-- Removed the spacer div -->
-
-    <!-- Predefined questions bubbles container with bottom padding -->
     <div class="mx-auto my-4 pb-20 p-4">
-        <div class="flex flex-wrap gap-2 justify-center">
+        <div class="flex flex-wrap gap-2 justify-center cursor-pointer">
             {% for key, question in predefined_questions.items %}
-                <a href="?question={{ key }}" class="bg-blue-200 text-blue-800 rounded-full px-3 py-1 text-xs">
-                    {{ question }}
-                </a>
+            <a onclick="submitPredefinedQuestion(event, '{{ question }}')" 
+               class="predefined-question bg-blue-200 text-blue-800 rounded-full px-3 py-1 text-xs hover:bg-blue-300 hover:text-blue-900 transition-colors duration-200 transform">
+                {{ question }}
+            </a>
             {% endfor %}
         </div>
     </div>
 
-        <!-- Updated input form container centered between left-64 and right-0 -->
-        <div class="fixed bottom-0 flex justify-center p-4" style="left: 16rem; right: 0;">
-            <div class="w-full max-w-md">
-                <form method="post" class="flex items-center w-full space-x-2">
-                    {% csrf_token %}
-                    <input name="question"
-                        class="flex-grow h-10 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
-                        placeholder="Type your message" required>
-                    <button
-                        class="h-10 px-4 py-2 rounded-md text-sm font-medium text-[#f9fafb] bg-black hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50"
-                        type="submit">
-                        Send
-                    </button>
-                </form>
-            </div>
+    <div class="fixed bottom-0 flex justify-center p-4" style="left: 16rem; right: 0;">
+        <div class="w-full max-w-md bg-blue/50 backdrop-blur-md rounded-xl shadow-lg border border-white-800/30 p-2">
+            <form onsubmit="submitStreamQuestion(event)" method="post" class="flex items-center w-full space-x-2">
+                {% csrf_token %}
+                <input name="question"
+                    class="flex-grow h-10 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2 bg-transparent"
+                    placeholder="Ask a question" required>
+                <button
+                    class="h-10 px-4 py-2 rounded-md text-sm font-medium text-[#f9fafb] bg-black hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50"
+                    type="submit">
+                    Send
+                </button>
+            </form>
         </div>
-      
-    {% comment %} </div> {% endcomment %}
+    </div>
 
-    {% comment %} Added go-to-top/bottom toggle button with arrow icons, now circular {% endcomment %}
     <button id="go-toggle" class="fixed bottom-4 right-4 bg-black text-white rounded-full w-8 h-8 p-1 shadow-lg hover:bg-blue-700">
         ↓
     </button>
-
 {% endblock %}

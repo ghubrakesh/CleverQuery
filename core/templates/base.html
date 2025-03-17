@@ -5,7 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CleverQuery{% endblock %}</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/css/typing-indicator.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Configure marked.js for markdown rendering with improved settings
+        document.addEventListener('DOMContentLoaded', function() {
+            marked.setOptions({
+                breaks: true,           // Convert line breaks to <br>
+                gfm: true,              // Use GitHub Flavored Markdown
+                headerIds: true,        // Generate IDs for headings
+                mangle: false,          // Don't mangle header IDs
+                smartLists: true,       // Smarter list behavior 
+                smartypants: true,      // Smart punctuation
+                xhtml: false            // Don't use XHTML
+            });
+        });
+    </script>
 </head>
 <body>
 {% if user.is_authenticated %}

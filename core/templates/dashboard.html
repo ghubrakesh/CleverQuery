@@ -15,7 +15,7 @@
         <div class="bg-white shadow rounded-lg p-6">
             <h2 class="text-2xl font-semibold mb-4 text-gray-800">Your Sessions</h2>
             <div class="h-80 overflow-y-scroll scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
-                <ul class="space-y-3">
+             <ul class="space-y-3">
                     {% for session in sessions %}
                         <li class="border-b pb-2">
                             <a href="{% url 'session_detail' session.id %}" class="text-blue-600 hover:underline font-medium">
@@ -50,6 +50,5 @@
             Start New Session
         </a>
     </div>
-    <!-- ...existing dashboard content... -->
 </div>
 {% endblock %}

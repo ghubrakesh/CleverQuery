@@ -1,7 +1,8 @@
 import json
 import os
+import threading
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import google.generativeai as genai
 import markdown
@@ -11,39 +12,33 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from dotenv import load_dotenv
 
-from .helpers import extract_text_from_pdf
+from .constants import SessionTypeEnum
+from .helpers import (
+    check_identity_question,
+    check_model_question,
+    extensions,
+    extract_text_from_pdf,
+    generate_ai_response,
+    generate_ai_response_stream,
+    get_predefined_questions,
+    get_recent_queries_context,
+    handle_predefined_question,
+    process_documents_with_rag,
+)
 from .models import Document, Query, Session
-
-extensions = [
-    "markdown.extensions.extra",  # Includes several commonly used extensions
-    "markdown.extensions.abbr",  # Abbreviations
-    "markdown.extensions.attr_list",  # Attribute Lists
-    "markdown.extensions.def_list",  # Definition Lists
-    "markdown.extensions.fenced_code",  # Fenced Code Blocks
-    "markdown.extensions.footnotes",  # Footnotes
-    "markdown.extensions.md_in_html",  # Markdown within HTML
-    "markdown.extensions.tables",  # Tables
-    "markdown.extensions.admonition",  # Admonition (e.g., notes, warnings)
-    "markdown.extensions.codehilite",  # Syntax highlighting for code blocks
-    "markdown.extensions.legacy_attrs",  # Legacy Attributes
-    "markdown.extensions.legacy_em",  # Legacy Emphasis
-    "markdown.extensions.meta",  # Meta-Data
-    "markdown.extensions.nl2br",  # New Line to Break
-    "markdown.extensions.sane_lists",  # Sane Lists
-    "markdown.extensions.smarty",  # SmartyPants (smart quotes, dashes, etc.)
-    "markdown.extensions.toc",  # Table of Contents
-    "markdown.extensions.wikilinks",  # WikiLinks
-]
+from .rag_engine import RAGEngine
 
 load_dotenv()
 genai.configure(api_key=os.getenv("GENERATIVEAI_API_KEY"))
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("gemini-2.0-flash-lite")
+
+rag_engine = RAGEngine()
 
 
 def index(request):
@@ -52,12 +47,20 @@ def index(request):
 
 @login_required
 def home(request):
+    """
+    Homepage with options to create new session
+    """
+
     sessions = Session.objects.filter(user=request.user)
     return render(request, "home.html", {"sessions": sessions})
 
 
 @login_required
 def dashboard(request):
+    """
+    Dashboard support with recent queries and sessions
+    """
+
     sessions = Session.objects.filter(user=request.user)
     recent_queries = Query.objects.filter(session__in=sessions).order_by("-asked_at")[:10]
     return render(
@@ -68,6 +71,10 @@ def dashboard(request):
 
 
 def login_view(request):
+    """
+    Login page with form to authenticate user
+    """
+
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -83,11 +90,19 @@ def login_view(request):
 
 
 def logout_view(request):
+    """
+    Logout user and redirect to login
+    """
+
     auth_logout(request)
     return redirect("login")
 
 
 def register_view(request):
+    """
+    Register page with form to create new user account
+    """
+
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -101,6 +116,10 @@ def register_view(request):
 
 @login_required
 def create_session(request):
+    """
+    Create a new session without uploading a document. It's not used as of now.
+    """
+
     if request.method == "POST":
         title = request.POST.get("title")
         session = Session.objects.create(user=request.user, title=title)
@@ -110,22 +129,23 @@ def create_session(request):
 
 @login_required
 def create_session_with_option(request, option):
-    title_map = {
-        "exam-preparation": "Exam Preparation Guide",
-        "technical-manual": "Technical Manual Interpreter",
-        "legal-document": "Legal Document Analysis",
-        "nutritional-label": "Nutritional Label Interpreter",
-        "financial-report": "Financial Report Analysis",
-        "contract-review": "Contract Review Assistant",
-    }
+    """
+    Create a new session with a specific session type.
+    """
+
+    title_map = SessionTypeEnum.as_dict()
     title = title_map.get(option, "Custom Session")
-    session = Session.objects.create(user=request.user, title=title)
+    session = Session.objects.create(user=request.user, title=title, session_type=option)
     return redirect("upload_document", session_id=session.id)
 
 
 @login_required
 @require_http_methods(["DELETE"])
 def delete_session(request, session_id):
+    """
+    Delete a session using it's session_id.
+    """
+
     try:
         session = Session.objects.get(id=session_id, user=request.user)
         session.delete()
@@ -138,6 +158,10 @@ def delete_session(request, session_id):
 
 @login_required
 def session_detail(request, session_id):
+    """
+    Display the session details and handle user queries.
+    """
+
     session = Session.objects.get(id=session_id)
     if not session.document_set.exists():
         return render(
@@ -147,129 +171,58 @@ def session_detail(request, session_id):
         )
 
     queries = Query.objects.filter(session=session)
-    identity_keywords = ["who are you", "what are you", "your name", "your identity"]
-    model_keywords = ["which model are you", "what model are you", "powered by", "based on"]
-
-    # Define predefined questions based on session title
-    predefined_questions_map = {
-        "Exam Preparation Guide": {
-            "summarize": "Summarize the key concepts in this study material.",
-            "keywords": "Extract important terms and definitions.",
-            "details": "Provide a detailed explanation of the topics covered.",
-            "practice": "Generate sample questions to test my understanding.",
-            "study_tips": "Suggest effective study techniques for this material.",
-            "explain_difficult_topics": "Break down the most challenging parts in simple terms.",
-        },
-        "Technical Manual Interpreter": {
-            "summarize": "Summarize the main points of this technical manual.",
-            "keywords": "Extract key technical terms and instructions.",
-            "details": "Provide a detailed explanation of the procedures and guidelines.",
-            "quick_summary": "Offer a brief summary of the manual’s content.",
-            "step_by_step": "Guide me through the process detailed in the instructions.",
-            "highlight_warnings": "Identify any critical warnings or cautions mentioned.",
-        },
-        "Legal Document Analysis": {
-            "summarize": "Summarize the key clauses and terms in this legal document.",
-            "keywords": "Extract important legal terms and conditions.",
-            "details": "Analyze the implications of specific clauses.",
-            "identify_risks": "Point out potential legal risks or loopholes.",
-            "compare_with_standard": "Compare this document with standard legal agreements.",
-            "explain_legal_jargon": "Define and explain any complex legal language.",
-        },
-        "Nutritional Label Interpreter": {
-            "summarize": "Summarize the nutritional information in this label.",
-            "keywords": "Extract key ingredients and allergens.",
-            "details": "Provide a detailed analysis of the nutritional content.",
-            "compare_nutrition": "Compare the nutritional value with recommended daily values.",
-            "ingredient_health": "Explain the health benefits or risks of the listed ingredients.",
-            "dietary_recommendations": "Suggest dietary adjustments based on this label.",
-        },
-        "Financial Report Analysis": {
-            "summarize": "Summarize the key financial metrics in this report.",
-            "keywords": "Extract important financial terms and figures.",
-            "details": "Provide a detailed analysis of the financial data.",
-            "analyze_trends": "Identify recent trends and forecast future performance.",
-            "risk_evaluation": "Assess potential financial risks in the report.",
-            "investment_opportunities": "Highlight promising investment opportunities from the data.",
-        },
-        "Contract Review Assistant": {
-            "summarize": "Summarize the main points of this contract.",
-            "keywords": "Extract key terms and obligations.",
-            "details": "Analyze the implications of specific contract clauses.",
-            "red_flags": "Identify any red flags or unusual clauses within the contract.",
-            "negotiation_tips": "Offer advice to negotiate problematic terms.",
-            "constraint_identification": "Point out any constraints or limitations imposed by the contract.",
-        },
-    }
-
-    predefined_questions = predefined_questions_map.get(session.title, {})
+    predefined_questions = get_predefined_questions(session.session_type)
 
     try:
         context = ""
         for doc in session.document_set.all():
-            file_path = doc.file.path
-            context += extract_text_from_pdf(file_path)
-        if not context.strip():
-            raise ValueError("No text could be extracted from the uploaded document.")
+            context += doc.extracted_text
     except Exception as e:
         return render(request, "error.html", {"message": str(e)})
+
     html_response = ""
     if request.method == "POST":
         question = request.POST.get("question", "").strip(" ").lower()
 
-        # Check if the question contains identity-related keywords
-        if any(keyword in question for keyword in identity_keywords):
-            html_response = markdown.markdown(
-                "I am CleverQuery, your personal assistant designed to help you interact with documents and answer your questions.",
-                extensions=extensions,
-            )
-        # Check if the question contains model-related keywords
-        elif any(keyword in question for keyword in model_keywords):
-            html_response = markdown.markdown(
-                "I am powered by advanced AI models, but my purpose is to serve as your friendly assistant within CleverQuery.",
-                extensions=["extra"],
-            )
+        identity_response = check_identity_question(question)
+        if identity_response:
+            html_response = identity_response
         else:
-            # Generate response using the LLM
-            fixed_prompt = predefined_questions_map.get(session.title, {}).get("fixed_prompt", "")
-            pdf_context = "\n\nCONTEXT: "
-            for doc in session.document_set.all():
-                extracted_text = doc.extracted_text
-                if not extracted_text:
-                    file_path = doc.file.path
-                    extracted_text = extract_text_from_pdf(file_path)
-                    if not extracted_text:
-                        return render(
-                            request,
-                            "error.html",
-                            {"message": "No text could be extracted from the uploaded document."},
-                        )
-                pdf_context += extracted_text
-            recent_queries = Query.objects.filter(session=session).order_by("-asked_at")[:3]
-            if recent_queries:
-                pdf_context += (
-                    "\n\n And here are my most recent queries for your better understanding: "
-                )
-                for query in recent_queries:
-                    pdf_context += f"Question: {query.question}\nAnswer: {query.answer}\n\n"
+            model_response = check_model_question(question)
+            if model_response:
+                html_response = model_response
+            else:
+                success, error_message = process_documents_with_rag(session, rag_engine)
+                if not success:
+                    return render(request, "error.html", {"message": error_message})
 
-            combined_prompt = f"{fixed_prompt} \n Here is your question: {question} \n Here is Context: {pdf_context}"
-            response = model.generate_content(combined_prompt)
-            html_response = markdown.markdown(response.text, extensions=["extra"])
+                recent_context = get_recent_queries_context(session)
+
+                html_response = generate_ai_response(
+                    question, context, session.title, rag_engine, recent_context
+                )
+
     elif "question" in request.GET:
         question_key = request.GET["question"]
-        question = predefined_questions.get(question_key, "Invalid question.")
+        question, html_response = handle_predefined_question(
+            question_key, context, session.session_type
+        )
     else:
         question = None
 
     if len(html_response) > 0:
         session.updated_at = datetime.now()
-        Query.objects.create(session=session, question=question, answer=html_response)
+        Query.objects.create(
+            session=session, question=question, answer=html_response, asked_at=timezone.now()
+        )
         return redirect("session_detail", session_id=session.id)
     elif question:
-        response = model.generate_content(f"{context}\nQuestion: {question}")
-        html_response = markdown.markdown(response.text, extensions=["extra"])
-        Query.objects.create(session=session, question=question, answer=html_response)
+        question, html_response = handle_predefined_question(
+            question, context, session.session_type
+        )
+        Query.objects.create(
+            session=session, question=question, answer=html_response, asked_at=timezone.now()
+        )
         return redirect("session_detail", session_id=session.id)
 
     return render(
@@ -286,17 +239,25 @@ def session_detail(request, session_id):
 
 @login_required
 def upload_document(request, session_id):
-    session = Session.objects.get(id=session_id)
+    """"
+    Upload a PDF document to a session.
+    """
+
     if request.method == "POST":
+        session = Session.objects.get(id=session_id)
         file = request.FILES["pdf_file"]
-        Document.objects.create(session=session, file=file)
+        extracted_text = extract_text_from_pdf(file)
+        Document.objects.create(session=session, extracted_text=extracted_text)
         return redirect("session_detail", session_id=session.id)
-    return render(request, "upload_document.html", {"session": session})
+    return render(request, "upload_document.html", {"session_id": session_id})
 
 
 @csrf_exempt
 @login_required
 def update_session_title(request, session_id):
+    """"
+    Update the title of a session.
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body)
@@ -314,6 +275,9 @@ def update_session_title(request, session_id):
 @login_required
 @require_http_methods(["POST"])
 def edit_message(request, query_id):
+    """
+    Edit a query message. Not yet supported
+    """
     try:
         query = Query.objects.get(id=query_id, session__user=request.user)
         new_text = request.POST.get("text")
@@ -330,9 +294,161 @@ def edit_message(request, query_id):
 @login_required
 @require_http_methods(["DELETE"])
 def delete_message(request, query_id):
+    """
+    Delete a query message. Not yet supported
+    """
     try:
         query = Query.objects.get(id=query_id, session__user=request.user)
         query.delete()
         return JsonResponse({"success": True})
     except Query.DoesNotExist:
         return JsonResponse({"success": False, "error": "Query not found."}, status=404)
+
+
+@login_required
+def stream_response(request, session_id):
+    """
+    Stream response (realtime generation) for a given question instead of waiting to load
+    the entire response.
+    """
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
+
+    session = Session.objects.get(id=session_id)
+    question = request.POST.get("question", "").strip()
+
+    stream_position = request.POST.get("stream_position", 0)
+    try:
+        stream_position = int(stream_position)
+    except (TypeError, ValueError):
+        stream_position = 0
+
+    if stream_position > 0:
+        recent_time = datetime.now() - timedelta(minutes=10)
+        existing_query = (
+            Query.objects.filter(session=session, question=question, asked_at__gte=recent_time)
+            .order_by("-asked_at")
+            .first()
+        )
+
+        if existing_query and existing_query.answer:
+            full_response = existing_query.answer
+
+            from bs4 import BeautifulSoup
+
+            soup = BeautifulSoup(full_response, "html.parser")
+            plain_text = soup.get_text()
+
+            if len(plain_text) > stream_position:
+                remaining_text = plain_text[stream_position:]
+                return StreamingHttpResponse(
+                    streaming_content=[remaining_text, "\n<!-- STREAM_COMPLETE -->"],
+                    content_type="text/plain",
+                )
+
+    success, error_message = process_documents_with_rag(session, rag_engine)
+    if not success:
+        return JsonResponse({"error": error_message}, status=500)
+
+    recent_context = get_recent_queries_context(session)
+
+    context_text = ""
+    for doc in session.document_set.all():
+        context_text += doc.extracted_text
+
+    response_buffer = []
+
+    def generate_chunks():
+        full_response = ""
+        last_chunk_sent = False
+        chunk_count = 0
+
+        try:
+            identity_response = check_identity_question(question.lower())
+            if identity_response:
+                plain_response = identity_response.replace("<p>", "").replace("</p>", "")
+                yield plain_response
+                response_buffer.append(plain_response)
+                full_response = plain_response
+            elif model_response := check_model_question(question.lower()):
+                plain_response = model_response.replace("<p>", "").replace("</p>", "")
+                yield plain_response
+                response_buffer.append(plain_response)
+                full_response = plain_response
+            else:
+                actual_question = question
+                try:
+                    stream = generate_ai_response_stream(
+                        actual_question,
+                        context_text,
+                        session.session_type,
+                        rag_engine,
+                        recent_context,
+                    )
+
+                    for chunk in stream:
+                        chunk_count += 1
+                        if hasattr(chunk, "text") and chunk.text:
+                            text_chunk = chunk.text
+                            yield text_chunk
+                            response_buffer.append(text_chunk)
+                            full_response += text_chunk
+
+                            if chunk_count >= 1000:
+                                break
+                except Exception as e:
+                    error_info = f"\nStreaming was interrupted: {str(e)}"
+                    yield error_info
+                    full_response += error_info
+                    response_buffer.append(error_info)
+
+            yield "\n<!-- STREAM_COMPLETE -->"
+            last_chunk_sent = True
+
+            def save_response():
+                try:
+                    if not full_response.strip():
+                        return
+
+                    html_response = markdown.markdown(full_response, extensions=extensions)
+
+                    recent_time = datetime.now() - timedelta(minutes=10)
+                    existing_query = (
+                        Query.objects.filter(
+                            session=session, question=question, asked_at__gte=recent_time
+                        )
+                        .order_by("-asked_at")
+                        .first()
+                    )
+
+                    if existing_query:
+                        existing_query.answer = html_response
+                        existing_query.save()
+                    else:
+                        session.updated_at = datetime.now()
+                        Query.objects.create(
+                            session=session, question=question, answer=html_response
+                        )
+                except Exception as e:
+                    print(f"Error saving response: {e}")
+
+            thread = threading.Thread(target=save_response)
+            thread.daemon = True
+            thread.start()
+
+        except Exception as e:
+            print(f"Error in stream_response: {e}")
+            if not last_chunk_sent:
+                error_msg = f"\nError occurred: {str(e)}"
+                yield error_msg
+                yield "\n<!-- STREAM_COMPLETE -->"
+
+    response = StreamingHttpResponse(
+        streaming_content=generate_chunks(), content_type="text/plain"
+    )
+
+    response["Cache-Control"] = "no-cache, no-transform"
+    response["X-Accel-Buffering"] = "no"
+
+    return response
