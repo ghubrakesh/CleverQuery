@@ -26,6 +26,5 @@ COPY . .
 # Expose port
 EXPOSE 8000 8001
 
-
-# Entry point script for migrations and static collection
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput"]
+# Entry point script for migrations, static collection, and server start
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn myproject.wsgi:application --bind 0.0.0.0:8000"]
