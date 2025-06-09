@@ -1,8 +1,8 @@
 services:
   web:
     # Use local Dockerfile
-#    build: .
-    image: your-username/your-app-name:latest
+    build: .
+#    image: your-username/your-app-name:latest
     volumes:
       - .:/app
     ports:

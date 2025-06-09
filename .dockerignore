@@ -38,6 +38,8 @@ Dockerfile
 
 # Virtual Environment
 venv/
+.venv/
+.venv
 ENV/
 
 # IDE specific files

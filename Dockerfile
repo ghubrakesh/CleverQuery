@@ -1,5 +1,5 @@
-# Use Python 3.9 as base image
-FROM python:3.9-slim
+# Use Python 3.10 as base image
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -23,8 +23,14 @@ RUN python -c "import nltk; nltk.download('punkt_tab')"
 # Copy project files
 COPY . .
 
-# Expose port
-EXPOSE 8000 8001
+# Create directories for static and media files
+RUN mkdir -p staticfiles media
 
-# Entry point script for migrations, static collection, and server start
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn myproject.wsgi:application --bind 0.0.0.0:8000"]
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
+# Expose port
+EXPOSE 8000
+
+# Entry point script for migrations and server start
+CMD ["sh", "-c", "python manage.py migrate && gunicorn cleverquery.wsgi:application --bind 0.0.0.0:8000 --workers 3"]
