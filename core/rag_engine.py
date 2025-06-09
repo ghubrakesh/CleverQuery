@@ -13,11 +13,10 @@ from .models import Document, DocumentEmbedding
 class RAGEngine:
     def __init__(self):
         self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
-        # Download required NLTK data
         try:
             nltk.data.find("tokenizers/punkt")
         except LookupError:
-            nltk.download("punkt")
+            nltk.download("punkt_tab")
         self.index = None     # Initialize FAISS index
         self.chunks = []
         self.dimension = 384  # Dimension of embeddings from all-MiniLM-L6-v2

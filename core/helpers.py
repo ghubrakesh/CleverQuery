@@ -18,12 +18,15 @@ def extract_text_from_pdf(file):
     This function uses PyPDF2 to read a PDF file and extract text content
     from all pages, concatenating them into a single string.
     """
-
-    reader = PyPDF2.PdfReader(file)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
-    return text
+    try:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        return text
+    except Exception as e:
+        print(f"Error extracting text from PDF: {e}")
+        return ""
 
 
 extensions = [
@@ -84,32 +87,35 @@ def check_model_question(question):
     return None
 
 
-def process_documents_with_rag(session, rag_engine):
+def process_documents_with_rag(session, rag_engine, file=None):
     """
     Process all documents in a session with the RAG engine.
     """
-    rag_engine.reset_index()
+    try:
+        rag_engine.reset_index()
 
-    for doc in session.document_set.all():
-        extracted_text = doc.extracted_text
-        if not extracted_text:
-            file = doc.file
-            extracted_text = extract_text_from_pdf(file)
+        for doc in session.document_set.all():
+            extracted_text = doc.extracted_text
             if not extracted_text:
-                return False, "No text could be extracted from the uploaded document."
-            doc.extracted_text = extracted_text
-            doc.save()
+                extracted_text = extract_text_from_pdf(file)
+                if not extracted_text:
+                    return False, "No text could be extracted from the uploaded document."
+                doc.extracted_text = extracted_text
+                doc.save()
 
-        if not doc.embeddings.exists():
-            rag_engine.process_document(extracted_text, document=doc)
-        else:
-            embeddings = np.array([np.array(e.embedding) for e in doc.embeddings.all()])
-            if rag_engine.index is None:
-                rag_engine.index = faiss.IndexFlatL2(rag_engine.dimension)
-            rag_engine.index.add(embeddings.astype("float32"))
-            rag_engine.chunks.extend(doc.text_chunks)
+            if not doc.embeddings.exists():
+                rag_engine.process_document(extracted_text, document=doc)
+            else:
+                embeddings = np.array([np.array(e.embedding) for e in doc.embeddings.all()])
+                if rag_engine.index is None:
+                    rag_engine.index = faiss.IndexFlatL2(rag_engine.dimension)
+                rag_engine.index.add(embeddings.astype("float32"))
+                rag_engine.chunks.extend(doc.text_chunks)
 
-    return True, ""
+        return True, ""
+    except Exception as e:
+        print(f"Error processing documents with RAG: {e}")
+        return False, str(e)
 
 
 def get_recent_queries_context(session, limit=3):
@@ -150,14 +156,17 @@ def generate_ai_response_stream(
         chat = model.start_chat()
         response_stream = chat.send_message(combined_prompt, stream=True)
 
-        return response_stream
+        # Ensure the stream is properly consumed
+        try:
+            for chunk in response_stream:
+                yield chunk
+        except Exception as stream_error:
+            print(f"Error in stream iteration: {stream_error}")
+            yield f"Stream interrupted: {str(stream_error)}"
 
     except Exception as e:
-
-        def error_generator(error=e):
-            yield f"Sorry, I couldn't generate a response due to an error: {str(error)}"
-
-        return error_generator()
+        print(f"Error generating AI response stream: {e}")
+        yield f"Sorry, I couldn't generate a response due to an error: {str(e)}"
 
 
 def generate_ai_response(question, context, session_title, rag_engine=None, recent_context=""):

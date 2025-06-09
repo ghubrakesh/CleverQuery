@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+    environment:
+      - DEBUG=True
+      - GENERATIVEAI_API_KEY=AIzaSyBnKkb0xc8bJgCN9aFxIoSVshqrkiSIUkc
+    command: bash -c "python manage.py runserver 0.0.0.0:8001"

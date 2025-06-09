@@ -125,8 +125,37 @@
         let streamingComplete = false;
         let retryCount = 0;
         const MAX_RETRIES = 2;
+        let safetyTimeoutId = null;
+        let lastContentLength = 0;
+        let stagnantCheckInterval = null;
         
         function startStreaming(startPosition = 0) {
+            // Clear any existing timeouts
+            if (safetyTimeoutId) {
+                clearTimeout(safetyTimeoutId);
+            }
+            if (stagnantCheckInterval) {
+                clearInterval(stagnantCheckInterval);
+            }
+            
+            // Set a safety timeout to prevent infinite hanging (2 minutes)
+            safetyTimeoutId = setTimeout(() => {
+                if (!streamingComplete) {
+                    console.warn("Safety timeout reached - finalizing response");
+                    streamingComplete = true;
+                    finalizeResponse();
+                }
+            }, 120000);
+            
+            // Check for stagnant stream (no new content for 10 seconds)
+            stagnantCheckInterval = setInterval(() => {
+                if (!streamingComplete && fullMarkdown.length === lastContentLength && fullMarkdown.length > 0) {
+                    console.warn("Stream appears stagnant, finalizing response");
+                    streamingComplete = true;
+                    finalizeResponse();
+                }
+                lastContentLength = fullMarkdown.length;
+            }, 10000);
             const formData = new FormData();
             formData.append('question', question);
             if (startPosition > 0) {
@@ -139,15 +168,21 @@
             xhr.seenBytes = 0;
             
             xhr.timeout = 90000;
-            
-            xhr.onprogress = function() {
+             xhr.onprogress = function() {
                 try {
                     const newData = xhr.responseText.substring(xhr.seenBytes);
                     xhr.seenBytes = xhr.responseText.length;
                     
-                    if (newData.includes('<!-- STREAM_COMPLETE -->')) {
+                    if (newData) {
+                        fullMarkdown += newData;
+                        rawResponseElement.textContent += newData;
+                    }
+                    
+                    // Check for completion marker in both new data and full response
+                    if (newData.includes('<!-- STREAM_COMPLETE -->') || xhr.responseText.includes('<!-- STREAM_COMPLETE -->')) {
                         hasCompletionMarker = true;
                         streamingComplete = true;
+                        console.log("Completion marker found in onprogress");
                         finalizeResponse();
                         return;
                     }
@@ -156,12 +191,7 @@
                         rawResponseElement.innerHTML = '';
                         isFirstChunk = false;
                     }
-                    
-                    if (newData) {
-                        fullMarkdown += newData;
-                        rawResponseElement.textContent += newData;
-                    }
-                    
+
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 } catch(e) {
                     console.error("Error processing chunk:", e);
@@ -171,9 +201,19 @@
             xhr.onload = function() {
                 console.log(`Stream response received: ${xhr.responseText.length} bytes`);
                 
-                if (xhr.responseText.includes('<!-- STREAM_COMPLETE -->')) {
+                // Process any remaining data that wasn't caught by onprogress
+                const remainingData = xhr.responseText.substring(xhr.seenBytes);
+                if (remainingData) {
+                    fullMarkdown += remainingData;
+                    rawResponseElement.textContent += remainingData;
+                    xhr.seenBytes = xhr.responseText.length;
+                }
+                
+                // Always check the full response for completion marker
+                if (xhr.responseText.includes('<!-- STREAM_COMPLETE -->') || hasCompletionMarker) {
                     streamingComplete = true;
                     hasCompletionMarker = true;
+                    console.log("Completion marker found in onload");
                     finalizeResponse();
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     if (fullMarkdown.length > 0 && !streamingComplete) {
@@ -189,6 +229,11 @@
                                 finalizeResponse();
                             }
                         }, 1000);
+                    } else {
+                        // No content received or already complete, treat as completion
+                        console.log("Finalizing response - no content or already complete");
+                        streamingComplete = true;
+                        finalizeResponse();
                     }
                 } else {
                     renderErrorMessage(`Server error: ${xhr.status}`);
@@ -234,6 +279,18 @@
         
         function finalizeResponse() {
             if (streamingComplete) {
+                // Clear safety timeout
+                if (safetyTimeoutId) {
+                    clearTimeout(safetyTimeoutId);
+                    safetyTimeoutId = null;
+                }
+                
+                // Clear stagnant check interval
+                if (stagnantCheckInterval) {
+                    clearInterval(stagnantCheckInterval);
+                    stagnantCheckInterval = null;
+                }
+                
                 console.log("Finalizing response with length:", fullMarkdown.length);
                 
                 const cleanMarkdown = fullMarkdown.replace('<!-- STREAM_COMPLETE -->', '');

@@ -132,7 +132,6 @@ def create_session_with_option(request, option):
     """
     Create a new session with a specific session type.
     """
-
     title_map = SessionTypeEnum.as_dict()
     title = title_map.get(option, "Custom Session")
     session = Session.objects.create(user=request.user, title=title, session_type=option)
@@ -157,7 +156,7 @@ def delete_session(request, session_id):
 
 
 @login_required
-def session_detail(request, session_id):
+def session_detail(request, session_id, file=None):
     """
     Display the session details and handle user queries.
     """
@@ -192,7 +191,7 @@ def session_detail(request, session_id):
             if model_response:
                 html_response = model_response
             else:
-                success, error_message = process_documents_with_rag(session, rag_engine)
+                success, error_message = process_documents_with_rag(session, rag_engine, file)
                 if not success:
                     return render(request, "error.html", {"message": error_message})
 
@@ -242,11 +241,10 @@ def upload_document(request, session_id):
     """"
     Upload a PDF document to a session.
     """
-
     if request.method == "POST":
         session = Session.objects.get(id=session_id)
         file = request.FILES["pdf_file"]
-        extracted_text = extract_text_from_pdf(file)
+        extracted_text = extract_text_from_pdf(file) or "no text found in the document"
         Document.objects.create(session=session, extracted_text=extracted_text)
         return redirect("session_detail", session_id=session.id)
     return render(request, "upload_document.html", {"session_id": session_id})
@@ -389,22 +387,45 @@ def stream_response(request, session_id):
 
                     for chunk in stream:
                         chunk_count += 1
-                        if hasattr(chunk, "text") and chunk.text:
-                            text_chunk = chunk.text
-                            yield text_chunk
-                            response_buffer.append(text_chunk)
-                            full_response += text_chunk
+                        try:
+                            # Handle different chunk types more robustly
+                            text_chunk = ""
+                            if hasattr(chunk, "text"):
+                                text_chunk = chunk.text if chunk.text else ""
+                            elif isinstance(chunk, str):
+                                text_chunk = chunk
 
-                            if chunk_count >= 1000:
-                                break
+                            if text_chunk:
+                                yield text_chunk
+                                response_buffer.append(text_chunk)
+                                full_response += text_chunk
+                        except Exception as chunk_error:
+                            print(f"Error processing chunk {chunk_count}: {chunk_error}")
+                            continue
+
+                        if chunk_count >= 1000:
+                            break
                 except Exception as e:
                     error_info = f"\nStreaming was interrupted: {str(e)}"
                     yield error_info
                     full_response += error_info
                     response_buffer.append(error_info)
 
-            yield "\n<!-- STREAM_COMPLETE -->"
+            # Send completion marker immediately after content
+            print(f"Sending completion marker for question: {question[:50]}...")
+            yield "<!-- STREAM_COMPLETE -->"
             last_chunk_sent = True
+
+        except Exception as e:
+            print(f"Error in stream_response: {e}")
+            if not last_chunk_sent:
+                error_msg = f"\nError occurred: {str(e)}"
+                yield error_msg
+        finally:
+            # Always send completion marker as part of the stream
+            if not last_chunk_sent:
+                yield "<!-- STREAM_COMPLETE -->"
+                last_chunk_sent = True
 
             def save_response():
                 try:
@@ -436,13 +457,6 @@ def stream_response(request, session_id):
             thread = threading.Thread(target=save_response)
             thread.daemon = True
             thread.start()
-
-        except Exception as e:
-            print(f"Error in stream_response: {e}")
-            if not last_chunk_sent:
-                error_msg = f"\nError occurred: {str(e)}"
-                yield error_msg
-                yield "\n<!-- STREAM_COMPLETE -->"
 
     response = StreamingHttpResponse(
         streaming_content=generate_chunks(), content_type="text/plain"
